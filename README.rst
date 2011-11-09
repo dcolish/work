@@ -1,5 +1,5 @@
 Work
------
+====
 
 Stupid simple time tracking
 
@@ -9,3 +9,9 @@ are in progress. You can also manually stop. Listing shows a nice chart of what
 you've done and gives me detail only when you ask for it.
 
 
+Availability
+============
+
+The git `work HEAD`_ can be installed via ``pip install work==dev``.
+
+.. _work HEAD: https://dcolish@github.com/dcolish/work.git

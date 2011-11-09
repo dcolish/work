@@ -1,7 +1,7 @@
 # Copyright Dan Colish
 # All rights reserved.
 #
-# This file is part of 'Timer' and is distributed under the GPLv3 license.
+# This file is part of 'Work' and is distributed under the GPLv3 license.
 # See LICENSE for more details.
 
 """
@@ -41,12 +41,18 @@ from json import dump, load
 from os.path import abspath, exists
 
 
+#TODO:dc: Make events into a class, probably should inherit from dict
 def new_event(name):
     return {
         'cumulative_time': timedelta().total_seconds(),
         'name': name,
         'time_chunks': [],
         }
+
+
+def format_event(ev):
+    return ' '.join(
+        (ev['name'], str(timedelta(seconds=int(ev['cumulative_time'])))))
 
 
 def stop_event(ev, active_start_time):
@@ -89,6 +95,7 @@ class EventManager(object):
                 self._data = default_data
 
     def start(self, name):
+        self.stop()
         ev_hash = sha1(name).hexdigest()
         ev = self._data['events'].get(ev_hash, new_event(name))
         ev_start = datetime.utcnow().isoformat()
@@ -98,11 +105,10 @@ class EventManager(object):
         self._sync(dirty=True)
 
     def list(self):
-        for k, v in self._data['events'].items():
-            print v['name'], ' ', str(timedelta(
-                    seconds=int(v['cumulative_time'])))
+        for k, ev in self._data['events'].items():
+            print format_event(ev)
 
-    def stop(self, name):
+    def stop(self):
         active_event_hash = self._data['active_event_hash']
         active_start_time = self._data['active_start_time']
         ev = self._data['events'].get(active_event_hash)
@@ -113,3 +119,4 @@ class EventManager(object):
         self._data['active_start_time'] = None
         self._data['events'].update({active_event_hash: stopped_ev})
         self._sync(dirty=True)
+        print format_event(stopped_ev)

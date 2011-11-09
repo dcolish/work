@@ -6,9 +6,14 @@
 
 from setuptools import find_packages, setup
 
+description = ''
+with open('README.rst') as f:
+    description = f.read()
 
 setup(name='Work',
       version='dev',
+      description='Agile work time tracker',
+      long_description=description,
       packages=find_packages(),
       author='Dan Colish',
       author_email='dcolish@gmail.com',
