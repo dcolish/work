@@ -16,7 +16,7 @@ setup(name='Work',
       platforms='any',
       entry_points={
         'console_scripts': [
-            'timer=timer.frontend:main',
+            'work=work.frontend:main',
             ],
         },
       )

@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 from inspect import getargspec
 from os.path import expanduser
 
-from timer.events import EventManager
+from work.events import EventManager
 
 
 def main():
@@ -37,6 +37,3 @@ def main():
             continue
         kw_args.update({fn_arg: getattr(args, fn_arg)})
     fn(**kw_args)
-
-if __name__ == '__main__':
-    main()
