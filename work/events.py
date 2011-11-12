@@ -35,41 +35,54 @@ timestamp. A timedelta is also calculated for these and placed into the
 
 The paused_events queue should be sorted by the last event stopped
 """
+
 from datetime import datetime, timedelta
 from hashlib import sha1
 from json import dump, load
 from os.path import abspath, exists
 
 
-#TODO:dc: Make events into a class, probably should inherit from dict
-def new_event(name):
-    return {
-        'cumulative_time': timedelta().total_seconds(),
-        'name': name,
-        'time_chunks': [],
-        }
+class Event(dict):
+    def __init__(self, name, dict_=None):
+        if not dict_:
+            self.update({
+                    'cumulative_time': timedelta().total_seconds(),
+                    'name': name,
+                    'time_chunks': [],
+                    })
+        else:
+            self.update(dict_)
 
+    def __hash__(self):
+        return hash(sha1(self['name']).hexdigest())
 
-def format_event(ev):
-    return ' '.join(
-        (ev['name'], str(timedelta(seconds=int(ev['cumulative_time'])))))
+    def __str__(self):
+        return ' '.join(
+            (self['name'],
+             str(timedelta(seconds=int(self['cumulative_time'])))))
 
+    @classmethod
+    def inflate(cls, dict_):
+        name = dict_.get('name')
+        if name:
+            return Event(name, dict_)
+        return dict_
 
-def stop_event(ev, active_start_time):
-    now = datetime.utcnow()
-    active_datetime = datetime.strptime(
-        active_start_time, '%Y-%m-%dT%H:%M:%S.%f')
-    cumulative_time = timedelta(seconds=int(ev['cumulative_time']))
-    ev['cumulative_time'] = (
-        cumulative_time + (now - active_datetime)).total_seconds()
-    ev['time_chunks'].append((active_start_time, now.isoformat()))
-    return ev
+    def stop(self, active_start_time):
+        now = datetime.utcnow()
+        active_datetime = datetime.strptime(
+            active_start_time, '%Y-%m-%dT%H:%M:%S.%f')
+        cumulative_time = timedelta(seconds=int(self['cumulative_time']))
+        self['cumulative_time'] = (
+            cumulative_time + (now - active_datetime)).total_seconds()
+        self['time_chunks'].append((active_start_time, now.isoformat()))
 
 
 default_data = {
     'active_start_time': None,
     'active_event_hash': None,
     'events': {},
+    'previous_events': [],
     }
 
 
@@ -88,25 +101,43 @@ class EventManager(object):
             if exists(self.storage_path):
                 with open(self.storage_path, "r+") as f:
                     try:
-                        self._data = load(f)
+                        self._data = load(f, object_hook=Event.inflate)
                     except ValueError:
                         self._data = default_data
             else:
                 self._data = default_data
 
-    def start(self, name):
-        self.stop()
+    def reset(self, name):
         ev_hash = sha1(name).hexdigest()
-        ev = self._data['events'].get(ev_hash, new_event(name))
+        ev = self._data['events'].get(ev_hash, Event(name))
+        ev['cumulative_time'] = 0
+        self._data['events'].update({ev_hash: ev})
+        self._sync(dirty=True)
+
+    def start(self, name=None):
+        if self._data['active_event_hash']:
+            self.stop()
+        if not name:
+            ev_hash = self._data.get('last_event')
+        else:
+            ev_hash = sha1(name).hexdigest()
+        ev = self._data['events'].get(ev_hash, Event(name))
         ev_start = datetime.utcnow().isoformat()
         self._data['active_event_hash'] = ev_hash
         self._data['active_start_time'] = ev_start
         self._data['events'].update({ev_hash: ev})
         self._sync(dirty=True)
 
+    def status(self):
+        active_event_hash = self._data['active_event_hash']
+        if active_event_hash:
+            print self._data['events'].get(active_event_hash)
+        else:
+            print "Nothing active"
+
     def list(self):
         for k, ev in self._data['events'].items():
-            print format_event(ev)
+            print ev
 
     def stop(self):
         active_event_hash = self._data['active_event_hash']
@@ -114,9 +145,10 @@ class EventManager(object):
         ev = self._data['events'].get(active_event_hash)
         if not ev:
             return
-        stopped_ev = stop_event(ev, active_start_time)
+        self._data['last_event'] = active_event_hash
+        ev.stop(active_start_time)
         self._data['active_event_hash'] = None
         self._data['active_start_time'] = None
-        self._data['events'].update({active_event_hash: stopped_ev})
+        self._data['events'].update({active_event_hash: ev})
         self._sync(dirty=True)
-        print format_event(stopped_ev)
+        print ev
