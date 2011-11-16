@@ -28,6 +28,9 @@ def main():
     start = subparser.add_parser('start', help='start a work event')
     start.add_argument('name', nargs='?')
 
+    start = subparser.add_parser('delete', help='start a work event')
+    start.add_argument('name', nargs='?')
+
     subparser.add_parser('stop', help='stop a work event')
 
     args = parser.parse_args()
@@ -37,6 +40,7 @@ def main():
                 'list': event_manager.list,
                 'stop': event_manager.stop,
                 'reset': event_manager.reset,
+                'delete': event_manager.delete,
                 }
     fn = func_map.get(args.command)
     fn_args = getargspec(fn).args

@@ -4,6 +4,11 @@
 # This file is part of 'Work' and is distributed under the GPLv3 license.
 # See LICENSE for more details.
 
+# TODO:dc:
+# Rethink using hashes as the dict keys, might be overkill
+# How to speed up sync with file
+# Should there be properties that alias dict keys
+
 """
 Data struct for storing timed events
 
@@ -25,7 +30,7 @@ Managing an Event
 -----------------
 
 When an `event` is started, the description is hashed and placed into the
-`active_event` key; a starting timestamp is placed into the `active_starttime`
+`active_event` key; a starting timestamp is placed into the `active_start_time`
 key. The event is also placed into the events key with a `cumulative_time` of 0.
 
 When an event is stopped, the event's hash is removed from `active_event`. The
@@ -92,6 +97,14 @@ class EventManager(object):
         self.storage_path = abspath(storage_path)
         self._sync(dirty=False)
 
+    def _reset_active(self):
+        hash_ = self._data['active_event_hash']
+        time_ = self._data['active_start_time']
+        self._data['active_event_hash'] = None
+        self._data['active_start_time'] = None
+        return hash_, time_
+
+    # XXX:dc: should this not be part of the event manager class?
     def _sync(self, dirty):
         if dirty:
             with open(self.storage_path, "w+") as f:
@@ -106,6 +119,17 @@ class EventManager(object):
                         self._data = default_data
             else:
                 self._data = default_data
+
+    def delete(self, name):
+        ev_hash = sha1(name).hexdigest()
+        if ev_hash == self._data['active_event_hash']:
+            self._reset_active()
+        del self._data['events'][ev_hash]
+        self._sync(dirty=True)
+
+    def list(self):
+        for k, ev in self._data['events'].items():
+            print ev
 
     def reset(self, name):
         ev_hash = sha1(name).hexdigest()
@@ -131,24 +155,17 @@ class EventManager(object):
     def status(self):
         active_event_hash = self._data['active_event_hash']
         if active_event_hash:
-            print self._data['events'].get(active_event_hash)
+            print self._data['events'][active_event_hash]
         else:
             print "Nothing active"
 
-    def list(self):
-        for k, ev in self._data['events'].items():
-            print ev
-
     def stop(self):
-        active_event_hash = self._data['active_event_hash']
-        active_start_time = self._data['active_start_time']
+        active_event_hash, active_start_time = self._reset_active()
         ev = self._data['events'].get(active_event_hash)
         if not ev:
             return
         self._data['last_event'] = active_event_hash
         ev.stop(active_start_time)
-        self._data['active_event_hash'] = None
-        self._data['active_start_time'] = None
         self._data['events'].update({active_event_hash: ev})
         self._sync(dirty=True)
         print ev

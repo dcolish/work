@@ -46,5 +46,5 @@ Availability
 
 The git `work HEAD`_ can be installed via ``pip install work==dev``.
 
+.. _work HEAD: https://github.com/dcolish/work/tarball/master#egg=work-dev
 
-.. _work HEAD: https://dcolish@github.com/dcolish/work.git
