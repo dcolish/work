@@ -11,9 +11,9 @@ you've done and gives me detail only when you ask for it.
 Usage
 =====
 
-Eventually the recorded time spans will be shown to the user to give insite into
-work habits. For now the cummulative is the only user facing data show and can
-be reset to only track the most relevent time span for an event.
+Eventually the recorded time spans will be shown to the user to give insight into
+work habits. For now the cumulative is the only user facing data show and can
+be reset to only track the most relevant time span for an event.
 
 
 The command interface for work is terminal based. To start a task::
@@ -32,11 +32,11 @@ To get the status on what job is currently running::
     
     $ work status
 
-To see all the tasks with their cummulative time::
+To see all the tasks with their cumulative time::
 
     $ work list
 
-To reset the cummulative time, this will not delete all the recorded timespans::
+To reset the cumulative time, this will not delete all the recorded timespans::
 
     $ work reset
 
